@@ -35,7 +35,6 @@ def check_auth():
     signature = request.forms.get('openid.sig')
     assoc_handle = request.forms.get('openid.assoc_handle')
     signed_fields = request.forms.get('openid.signed')
-    # print(assoc_handle, signature, signed_fields)
     if assoc_handle != HANDLE:
         return 'openid.mode:id_res\nis_valid:false\n'
     signed_data = []
@@ -44,7 +43,6 @@ def check_auth():
            signed_data.append('openid.mode:id_res')
            continue
         signed_data.append('openid.{}:{}'.format(field, request.forms.get('openid.' + field)))
-    # print('\n'.join(signed_data))
     new_signature = base64.b64encode(
         hmac.new(
             SECRET,
@@ -52,8 +50,10 @@ def check_auth():
         ).digest()
     ).decode('utf-8')
     is_oid2 = request.forms.get('openid.ns', None) == 'http://specs.openid.net/auth/2.0'
-    print(new_signature, signature)
-    return 'openid.mode:id_res\nis_valid:{}\n{}'.format('true' if new_signature == signature else 'false', 'openid.ns:http://specs.openid.net/auth/2.0\n' if is_oid2 else '')
+    is_valid = 'true' if new_signature == signature else 'false'
+    if is_oid2:
+         return 'ns:http://specs.openid.net/auth/2.0\nopenid.mode:id_res\nis_valid:{}\n'.format(is_valid)
+    return 'openid.mode:id_res\nis_valid:{}\n'.format(is_valid)
 
 @app.post('/check')
 def check_endpoint():
@@ -95,7 +95,6 @@ def check_endpoint():
             oid_response['sreg.' + field] = SREG_DATA[field].format(**user_data)
     oid_response_fields = oid_response.keys()
     signed_fields = ','.join(oid_response_fields)
-    # print('\n'.join(['openid.{}:{}'.format(k, oid_response[k]) for k in oid_response_fields]))
     signature = base64.b64encode(
         hmac.new(
             SECRET,
@@ -120,42 +119,5 @@ def reject_request():
     response.status = 302
     response.headers['Location'] = oid_request['openid.return_to'] + ('?' if oid_request['openid.return_to'].find('?') == -1 else '&') + urlencode({'openid.mode': 'cancel'})
     return response
-
-@app.get('/old')
-def old_index():
-	query_params = parse_qs(request.query_string)
-	print(request.query_string)
-	print(query_params)
-	resp = {}
-	if 'openid.ax.mode' in query_params:
-		ax_require = query_params['openid.ax.required'][0].split(',')
-		resp['openid.ax.mode'] = 'fetch_response'
-		for field in ax_require:
-			resp['openid.ax.type.' + field] = query_params['openid.ax.type.' + field][0]
-			resp['openid.ax.value.' + field] = AX_DATA[query_params['openid.ax.type.' + field][0]]
-	if 'openid.sreg.required' in query_params:
-		sreg_require = query_params['openid.sreg.required'][0].split(',')
-		for field in sreg_require:
-			resp['openid.sreg.' + field] = SREG_DATA[field]
-	# default response
-	# resp['openid.ns'] = 'http://specs.openid.net/auth/2.0'
-	resp['openid.mode'] = 'id_res'
-	# resp['openid.op_endpoint'] = 'https://gears.headake.win/oid/'
-	resp['openid.identity'] = query_params['openid.identity'][0]
-	resp['openid.return_to'] = query_params['openid.return_to'][0]
-	resp['openid.assoc_handle'] = 'DE82AF46QWERTZ'
-	resp['openid.signed'] = 'mode,identity,return_to'
-	resp['openid.sig'] = base64.b64encode(hmac.new(bytearray([random.getrandbits(8) for _ in range(20)]), 'openid.mode:id_res\nopenid.identity:{}\nopenid.return_to:{}'.format(resp['openid.identity'], resp['openid.return_to']).encode('utf-8')).digest())
-	# resp['openid.response_nonce'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-	response = HTTPResponse()
-	response.status = 307
-	response.headers['Location'] = query_params['openid.return_to'][0] + '&' + urlencode(resp)
-	return response
-	# return '''<!doctype html><meta charset='utf-8' /><h1>Under construction</h1>'''
-
-@app.post('/old')
-def index_post():
-	print(request.forms)
-	return 'ns:http://specs.openid.net/auth/2.0\nis_valid:true'
 
 app.run(host='0.0.0.0', port=8891)
