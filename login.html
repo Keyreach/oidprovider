@@ -54,6 +54,16 @@ body {
         <input type='text' name='username' value='{{ username }}' readonly />
         <label>Password</label>
         <input type='password' name='password' />
+        {% if info_fields|length > 1 %}
+        <div>
+            Site requests following fields:
+            <ul>
+            {% for field in info_fields %}
+            <li>{{ field }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
         <div class='actions'>
             <button type='submit'>Sign In</button>
         </div>

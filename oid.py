@@ -11,10 +11,21 @@ AX_DATA = {
 	'http://axschema.org/namePerson/first': '{firstName}',
 	'http://axschema.org/namePerson/last': '{lastName}'
 }
+AX_DESCRIPTION = {
+	'http://axschema.org/contact/email': 'E-mail',
+	'http://axschema.org/namePerson': 'Full name',
+	'http://axschema.org/namePerson/first': 'First name',
+	'http://axschema.org/namePerson/last': 'Last name'
+}
 SREG_DATA = {
 	'email': '{email}',
 	'fullname': '{firstName} {lastName}',
 	'nickname': '{nickname}'
+}
+SREG_DESCRIPTION = {
+    'email': 'E-mail',
+    'fullname': 'Full user name',
+    'nickname': 'User\'s nickname',
 }
 
 app = Bottle()
@@ -25,7 +36,21 @@ def index():
     db = dbm.open(os.path.join(BASEDIR, 'req.db'), 'c')
     db[request_id] = request.query_string
     db.close()
-    return template('login.html', request_id=request_id, username=request.query.get('openid.identity'))
+    additional_fields = []
+    sreg_required = request.query.get('openid.sreg.required', None)
+    if sreg_required is not None:
+        for item in sreg_required.split(','):
+            additional_fields.append(SREG_DESCRIPTION[item])
+    ax_required = request.query.get('openid.ax.required', None)
+    if ax_required is not None:
+        for item in ax_required.split(','):
+            additional_fields.append(AX_DESCRIPTION[request.query.get('openid.ax.type.' + item)])
+    return template(
+        'login.html',
+        request_id=request_id,
+        username=request.query.get('openid.identity'),
+        info_fields=additional_fields
+    )
 
 @app.post('/')
 def check_auth():
