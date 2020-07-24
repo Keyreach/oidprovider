@@ -45,6 +45,11 @@ body {
     border: 1px solid #c0c6cc;
     background-color: #e0e6ec;
 }
+.info-requests {
+    border: 1px solid #CC6;
+    background-color: #FF8;
+    padding: 5px;
+}
 </style>
 <form action='/oid/check' method='POST'>
     <input type='hidden' name='request_id' value='{{ request_id }}' />
@@ -55,7 +60,7 @@ body {
         <label>Password</label>
         <input type='password' name='password' />
         {% if info_fields|length > 1 %}
-        <div>
+        <div class='info-requests'>
             Site requests following fields:
             <ul>
             {% for field in info_fields %}
