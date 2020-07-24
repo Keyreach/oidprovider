@@ -1,9 +1,8 @@
 import os, json, datetime, random, hmac, base64, dbm
 from bottle import Bottle, request, HTTPResponse, jinja2_template as template, TEMPLATE_PATH, abort
 from urllib.parse import parse_qs, urlencode
+import settings
 
-HANDLE = 'a5s0ch4ndl3'
-SECRET = b'\x00\x01\x02\x03\x9a\xc2\x04\xc2\xf3\xa2\x06\x07\xfd\x15\x08\xbf\xed\x00\x00\x28'
 BASEDIR = os.path.dirname(__file__)
 TEMPLATE_PATH.append(BASEDIR)
 AX_DATA = {
@@ -35,7 +34,7 @@ def check_auth():
     signature = request.forms.get('openid.sig')
     assoc_handle = request.forms.get('openid.assoc_handle')
     signed_fields = request.forms.get('openid.signed')
-    if assoc_handle != HANDLE:
+    if assoc_handle != settings.HANDLE:
         return 'openid.mode:id_res\nis_valid:false\n'
     signed_data = []
     for field in signed_fields.split(','):
@@ -45,7 +44,7 @@ def check_auth():
         signed_data.append('openid.{}:{}'.format(field, request.forms.get('openid.' + field)))
     new_signature = base64.b64encode(
         hmac.new(
-            SECRET,
+            settings.SECRET,
             '\n'.join(signed_data).encode('utf-8')
         ).digest()
     ).decode('utf-8')
@@ -81,7 +80,7 @@ def check_endpoint():
         oid_response['ns'] = 'http://specs.openid.net/auth/2.0'
         oid_response['op_endpoint'] = 'https://gears.headake.win/oid/'
         oid_response['response_nonce'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ') 
-        oid_response['assoc_handle'] = HANDLE
+        oid_response['assoc_handle'] = settings.HANDLE
         oid_response['claimed_id'] = oid_request['openid.claimed_id']
     if 'openid.ax.required' in oid_request:
         ax_required = oid_request['openid.ax.required'].split(',')
@@ -97,11 +96,11 @@ def check_endpoint():
     signed_fields = ','.join(oid_response_fields)
     signature = base64.b64encode(
         hmac.new(
-            SECRET,
+            settings.SECRET,
             '\n'.join(['openid.{}:{}'.format(k, oid_response[k]) for k in oid_response_fields]).encode('utf-8')
         ).digest()
     )
-    oid_response['assoc_handle'] = HANDLE
+    oid_response['assoc_handle'] = settings.HANDLE
     oid_response['signed'] = signed_fields
     oid_response['sig'] = signature
     response.status = 302
