@@ -15,17 +15,35 @@ AX_DESCRIPTION = {
 	'http://axschema.org/contact/email': 'E-mail',
 	'http://axschema.org/namePerson': 'Full name',
 	'http://axschema.org/namePerson/first': 'First name',
-	'http://axschema.org/namePerson/last': 'Last name'
+	'http://axschema.org/namePerson/last': 'Last name',
+	'http://axschema.org/namePerson/prefix': 'Name prefix',
+	'http://axschema.org/namePerson/middle': 'Middle name',
+	'http://axschema.org/namePerson/suffix': 'Name suffix',
+	'http://axschema.org/namePerson/friendly': 'Username',
+	'http://axschema.org/company/name': 'Company name',
+	'http://axschema.org/company/title': 'Job title',
 }
 SREG_DATA = {
 	'email': '{email}',
 	'fullname': '{firstName} {lastName}',
-	'nickname': '{nickname}'
+	'nickname': '{nickname}',
+	'dob': '2001-01-01',
+	'gender': 'M',
+	'postcode': '000000',
+	'country': 'RU',
+	'language': 'ru',
+	'timezone': 'Asia/Yekaterinburg'
 }
 SREG_DESCRIPTION = {
     'email': 'E-mail',
     'fullname': 'Full user name',
     'nickname': 'User\'s nickname',
+    'dob': 'Date of birth',
+    'gender': 'Gender',
+    'postcode': 'Postal code',
+    'country': 'Country of residence',
+    'language': 'Preferred language',
+    'timezone': 'Timezone'
 }
 
 app = Bottle()
