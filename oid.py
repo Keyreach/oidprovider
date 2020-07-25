@@ -1,4 +1,4 @@
-import os, json, datetime, random, hmac, base64, dbm
+import os, json, datetime, random, hmac, base64, dbm, uuid
 from bottle import Bottle, request, HTTPResponse, jinja2_template as template, TEMPLATE_PATH, abort
 from urllib.parse import parse_qs, urlencode
 import settings
@@ -36,8 +36,8 @@ SREG_DATA = {
 }
 SREG_DESCRIPTION = {
     'email': 'E-mail',
-    'fullname': 'Full user name',
-    'nickname': 'User\'s nickname',
+    'fullname': 'Full name',
+    'nickname': 'Nickname',
     'dob': 'Date of birth',
     'gender': 'Gender',
     'postcode': 'Postal code',
@@ -122,7 +122,7 @@ def check_endpoint():
     if is_oid2:
         oid_response['ns'] = 'http://specs.openid.net/auth/2.0'
         oid_response['op_endpoint'] = 'https://gears.headake.win/oid/'
-        oid_response['response_nonce'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ') 
+        oid_response['response_nonce'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
         oid_response['assoc_handle'] = settings.HANDLE
         oid_response['claimed_id'] = oid_request['openid.claimed_id']
     if 'openid.ax.required' in oid_request:
@@ -160,6 +160,57 @@ def reject_request():
     response = HTTPResponse()
     response.status = 302
     response.headers['Location'] = oid_request['openid.return_to'] + ('?' if oid_request['openid.return_to'].find('?') == -1 else '&') + urlencode({'openid.mode': 'cancel'})
+    return response
+
+# indieauth implementation
+@app.get('/iauth')
+def indieauth_authorize():
+    request_id = str(10000 + random.randrange(90000))
+    identity = request.query.get('me')
+    auth_code = request.query.get('code', None)
+    rp_url = request.query.get('client_id')
+    db = dbm.open(os.path.join(BASEDIR, 'req.db'), 'c')
+
+    if auth_code is None:
+        db['ia.request:' + request_id] = request.query_string
+        db.close()
+        return template(
+            'indieauth-login.html',
+            request_id=request_id,
+            username=identity,
+            client=rp_url
+        )
+    elif 'ia.auth:' + auth_code in db:
+        ia_request = json.loads(db['ia.auth:' + auth_code].decode('utf-8'))
+        rp_callback = request.query.get('redirect_uri')
+        if rp_callback == ia_request['redirect_uri'] and rp_url == ia_request['client_id']:
+            return json.dumps({'me': ia_request['me']})
+    return HTTPResponse(status=400, body=json.dumps({'error': ''}))
+
+@app.post('/iauth/check')
+def indieauth_check():
+    response = HTTPResponse()
+    request_id = request.forms.get('request_id')
+    identity = request.forms.get('username')
+    password = request.forms.get('password')
+    with open(os.path.join(BASEDIR, 'userdb.json'), 'r') as f:
+        userdb = json.load(f)
+        if not identity in userdb or userdb[identity]['password'] != password:
+            response.status = 302
+            response.headers['Location'] = '/iauth/reject?request_id={}'.format(request_id)
+            return response
+        user_data = userdb[identity]
+    authorization_code = str(uuid.uuid4())
+    db = dbm.open(os.path.join(BASEDIR, 'req.db'), 'c')
+    ia_request = {k: v[0] for k, v in parse_qs(db['ia.request:' + request_id].decode('utf-8')).items()}
+    db['ia.auth:' + authorization_code] = json.dumps(ia_request)
+    db.close()
+    ia_response = {
+        'code': authorization_code,
+        'state': ia_request['state']
+    }
+    response.status = 302
+    response.headers['Location'] = ia_request['redirect_uri'] + ('?' if ia_request['redirect_uri'].find('?') == -1 else '&') + urlencode(ia_response)
     return response
 
 app.run(host='0.0.0.0', port=8891)
