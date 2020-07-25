@@ -1,0 +1,70 @@
+<!doctype html>
+<meta charset='utf-8' />
+<title>Headake IndieAuth</title>
+<style>
+body {
+    background-color: #50565c;
+    font: 400 11pt "Source Sans Pro", "Open Sans", sans-serif;
+}
+.login-area {
+    background: #FFF;
+    border: 1px solid #30363c;
+    padding: 10px;
+    margin: 20px auto;
+    max-width: 240px;
+    width: 100%;
+}
+.login-area > h2 {
+    margin: 5px 0 10px;
+    text-align: center;
+}
+.login-area > label {
+    display: block;
+    padding: 5px;
+    text-align: center;
+}
+.login-area > input {
+    box-sizing: border-box;
+    padding: 5px;
+    border: 1px solid #ccc;
+    background-color: #FFF;
+    width: 100%;
+}
+.actions {
+    margin-top: 2em;
+    text-align: center;
+}
+.actions > button {
+    padding: 5px 15px;
+    border: 1px solid #ccc;
+    background-color: #eee;
+    box-sizing: border-box;
+    width: 100%;
+}
+.actions > button:hover {
+    border: 1px solid #c0c6cc;
+    background-color: #e0e6ec;
+}
+.info-requests {
+    margin: 1em 0;
+    border: 1px solid #CC6;
+    background-color: #FF8;
+    padding: 0 10px;
+}
+</style>
+<form action='/oid/iauth/check' method='POST'>
+    <input type='hidden' name='request_id' value='{{ request_id }}' />
+    <div class='login-area'>
+        <h2>sign in</h2>
+        <div class='info-requests'>
+            <p>Enter password for authorization at <a href="{{ client }}">{{ client }}</a></p>
+        </div>
+        <label>Username</label>
+        <input type='text' name='username' value='{{ username }}' readonly />
+        <label>Password</label>
+        <input type='password' name='password' />
+        <div class='actions'>
+            <button type='submit'>Sign In</button>
+        </div>
+    </div>
+</form>
