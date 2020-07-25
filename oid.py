@@ -167,22 +167,25 @@ def reject_request():
 def indieauth_authorize():
     request_id = str(10000 + random.randrange(90000))
     identity = request.query.get('me')
-    auth_code = request.query.get('code', None)
     rp_url = request.query.get('client_id')
     db = dbm.open(os.path.join(BASEDIR, 'req.db'), 'c')
+    db['ia.request:' + request_id] = request.query_string
+    db.close()
+    return template(
+        'indieauth-login.html',
+        request_id=request_id,
+        username=identity,
+        client=rp_url
+    )
 
-    if auth_code is None:
-        db['ia.request:' + request_id] = request.query_string
-        db.close()
-        return template(
-            'indieauth-login.html',
-            request_id=request_id,
-            username=identity,
-            client=rp_url
-        )
-    elif 'ia.auth:' + auth_code in db:
+@app.post('/iauth')
+def indieauth_verification():
+    auth_code = request.forms.get('code', None)
+    rp_url = request.forms.get('client_id')
+    rp_callback = request.forms.get('redirect_uri')
+    db = dbm.open(os.path.join(BASEDIR, 'req.db'), 'c')
+    if 'ia.auth:' + auth_code in db:
         ia_request = json.loads(db['ia.auth:' + auth_code].decode('utf-8'))
-        rp_callback = request.query.get('redirect_uri')
         if rp_callback == ia_request['redirect_uri'] and rp_url == ia_request['client_id']:
             return json.dumps({'me': ia_request['me']})
     return HTTPResponse(status=400, body=json.dumps({'error': ''}))
