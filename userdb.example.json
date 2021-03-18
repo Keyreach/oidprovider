@@ -1,0 +1,9 @@
+{
+    "http://example.com/": {
+        "password": "mypassword",
+        "email": "jdoe@example.com",
+        "nickname": "johndoe",
+        "firstName": "John",
+        "lastName": "Doe"
+    }
+}
